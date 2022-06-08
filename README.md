@@ -135,12 +135,12 @@ mv KIWI /tftpboot
 
 
 #create local ssh keys and scripts to copy keys to servers
-
+`ssh-keygen`
 `nano ~/.ssh/config`
 `StrictHostKeyChecking no`
 
 
-`ssh-keygen`
+
 
 `nano /tftpboot/copykeys`
 
@@ -172,7 +172,7 @@ done
 
 
 ##create list, copy keys, execute stress
-
+`cd /tftpboot`
 `chmod +x {copykeys,createlist,executestress}`
 `./createlist`
 `./copykeys`

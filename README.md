@@ -94,8 +94,8 @@ PROMPT 1
 TIMEOUT 1
 LABEL Stresslinux Net Boot
          MENU LABEL Stresslinux
-         KERNEL http://192.168.10.123/image/initrd-netboot-suse-leap-42.1.x86_64-2.42.1.kernel.4.4.180-102-default
-         APPEND initrd=http://192.168.10.123/image/initrd-netboot-suse-leap-42.1.x86_64-2.42.1.gz ramdisk_size=1959936
+         KERNEL http://10.1.0.1/image/initrd-netboot-suse-leap-42.1.x86_64-2.42.1.kernel.4.4.180-102-default
+         APPEND initrd=http://10.1.0.1/image/initrd-netboot-suse-leap-42.1.x86_64-2.42.1.gz ramdisk_size=1959936
          TEXT HELP
                  Stresslinux PXE boot
          ENDTEXT
@@ -131,7 +131,7 @@ mv KIWI /tftpboot
 ```
 
 `nano /tftpboot/KIWI/config.default`
-`IMAGE=/dev/ram1;stresslinux.x86_64;1.0.3;192.168.10.123;4096;compressed`
+`IMAGE=/dev/ram1;stresslinux.x86_64;1.0.3;10.1.0.1;4096;compressed`
 
 
 #create local ssh keys and scripts to copy keys to servers

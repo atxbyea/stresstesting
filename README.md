@@ -55,7 +55,7 @@ TFTP_ADDRESS="10.1.0.1:69"
 
 ##configure dhcp server
 
-`nano /etc/dhcp/dhcp.conf`
+`nano /etc/dhcp/dhcpd.conf`
 
 ```
 subnet 10.1.0.0 netmask 255.255.240.0 {
@@ -81,7 +81,7 @@ authoritative;
 mkdir /tftpboot/image
 cd /tftpboot/image
 wget http://download.obs.j0ke.net/stresslinux:/42.3/images/stresslinux.x86_64-1.0.3-Build20.62.tgz
-tar -zxvf stresslinux.x86_64-1.0.3-Build20.62
+tar -zxvf stresslinux.x86_64-1.0.3-Build20.62.tgz
 ```
 
 ##configure pxe boot menu

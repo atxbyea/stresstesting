@@ -86,7 +86,7 @@ authoritative;
 cd /tmp
 wget http://releases.ubuntu.com/focal/ubuntu-20.04.4-live-server-amd64.iso
 mount ubuntu-20.04.4-live-server-amd64.iso /mnt
-cp /mnt/casper{vmlinuz,initrd} /tftpboot/images/casper
+cp /mnt/casper{vmlinuz,initrd} /tftpboot/image/casper
 ```
 ##configure pxe boot menu
 

@@ -99,7 +99,7 @@ TIMEOUT 1
 LABEL Stresslinux Net Boot
          MENU LABEL EirikZ Stress Your DC
          KERNEL http://10.1.0.1/image/casper/vmlinuz
-         APPEND root=/dev/nfs initrd=http://10.1.0.1/image/casper/initrd nfsroot=10.1.0.1:/tftpboot/ubuntu ip=dhcp ro boot=nfs nfsboot=nfs   
+         APPEND root=/dev/nfs initrd=http://10.1.0.1/image/casper/initrd nfsroot=10.1.0.1:/tftpboot/ubuntu ip=dhcp rw boot=nfs nfsboot=nfs   
          TEXT HELP
                  It's getting hot in here
          ENDTEXT
@@ -209,7 +209,7 @@ crontab -e
 
 @reboot /usr/bin/stress -c 8 -i 8 -m 8
 @reboot /usr/bin/ipmitool chassis identify force
-@reboot /usr/bin/dmidecode -s system-serial-number >> /mnt/runconfirm/servers.txt
+@reboot /usr/sbin/dmidecode -s system-serial-number >> /mnt/runconfirm/servers.txt
 ```
 
 `mkdir /mnt/runconfirm`

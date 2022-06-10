@@ -9,7 +9,8 @@
 `nano /etc/netplan/01-netcfg.yaml`
 
 ```yaml
-network:
+network:echo hpilo | tee -a /etc/modules
+
   version: 2
   renderer: networkd
   ethernets:
@@ -243,6 +244,14 @@ Edit initramfs.conf to load netboot modules
 Recreate initramfs
 
 `update-initramfs -u`
+
+Add required drivers at boottime (will vary)
+
+```
+echo hpilo | tee -a /etc/modules
+echo bnx2x | tee -a /etc/modules
+```
+
 
 Change root password
 

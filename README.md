@@ -2,7 +2,7 @@
 
 ##Debian\Ubuntu based install of tftpd \ apache2 \ dhcp-server 
 
-apt install isc-dhcp-server tftpd-hpa syslinux-efi syslinux-common apache2 sshpass debootstrap
+apt install isc-dhcp-server tftpd-hpa syslinux-efi syslinux-common apache2 sshpass debootstrap nfs-kernel-server
 
 ##configuring the IP address of the pxe adapter
 

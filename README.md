@@ -81,13 +81,6 @@ authoritative;
 
 `systemctl restart isc-dhcp-server`
 
-##copy out netboot kernel\initrd
-```
-cd /tmp
-wget http://releases.ubuntu.com/focal/ubuntu-20.04.4-live-server-amd64.iso
-mount ubuntu-20.04.4-live-server-amd64.iso /mnt
-cp /mnt/casper/{vmlinuz,initrd} /tftpboot/image/casper
-```
 ##configure pxe boot menu
 
 `nano /tftpboot/pxelinux.cfg/default`
@@ -99,7 +92,7 @@ TIMEOUT 1
 LABEL Stresslinux Net Boot
          MENU LABEL EirikZ Stress Your DC
          KERNEL http://10.1.0.1/image/casper/vmlinuz
-         APPEND root=/dev/nfs initrd=http://10.1.0.1/image/casper/initrd nfsroot=10.1.0.1:/tftpboot/ubuntu ip=dhcp rw boot=nfs nfsboot=nfs   
+         APPEND root=/dev/nfs initrd=http://10.1.0.1/image/casper/initrd.img nfsroot=10.1.0.1:/tftpboot/ubuntu ip=dhcp rw boot=nfs nfsboot=nfs   
          TEXT HELP
                  It's getting hot in here
          ENDTEXT
@@ -143,7 +136,7 @@ Reload NFS exports
 
 ##creating the nfs diskless root
 
-`debootstrap --arch=amd64 --variant=minbase focal /tftpboot/ubuntu http://archive.ubuntu.com/ubuntu`
+`debootstrap --arch=amd64 --variant=minbase jammy /tftpboot/ubuntu http://archive.ubuntu.com/ubuntu`
 
 Then enter the chroot
 
@@ -161,12 +154,12 @@ export LC_ALL=C
 Populate the sources
 ```
 cat <<EOF > /etc/apt/sources.list
-deb http://us.archive.ubuntu.com/ubuntu/ focal main restricted universe multiverse 
-deb-src http://us.archive.ubuntu.com/ubuntu/ focal main restricted universe multiverse
-deb http://us.archive.ubuntu.com/ubuntu/ focal-security main restricted universe multiverse 
-deb-src http://us.archive.ubuntu.com/ubuntu/ focal-security main restricted universe multiverse
-deb http://us.archive.ubuntu.com/ubuntu/ focal-updates main restricted universe multiverse 
-deb-src http://us.archive.ubuntu.com/ubuntu/ focal-updates main restricted universe multiverse    
+deb http://us.archive.ubuntu.com/ubuntu/ jammy main restricted universe multiverse 
+deb-src http://us.archive.ubuntu.com/ubuntu/ jammy main restricted universe multiverse
+deb http://us.archive.ubuntu.com/ubuntu/ jammy-security main restricted universe multiverse 
+deb-src http://us.archive.ubuntu.com/ubuntu/ jammy-security main restricted universe multiverse
+deb http://us.archive.ubuntu.com/ubuntu/ jammy-updates main restricted universe multiverse 
+deb-src http://us.archive.ubuntu.com/ubuntu/ jammy-updates main restricted universe multiverse    
 EOF
 ```
 
@@ -179,11 +172,8 @@ dbus-uuidgen > /etc/machine-id
 ln -fs /etc/machine-id /var/lib/dbus/machine-id
 dpkg-divert --local --rename --add /sbin/initctl
 ln -s /bin/true /sbin/initctl
-apt install -y stress cron dmidecode ipmitool nfs-common openssh-server ubuntu-standard casper lupin-casper discover os-prober network-manager resolvconf net-tools locales grub-common grub-pc grub-pc-bin grub2-common vim nano less curl apt-transport-https
+apt install -y stress cron dmidecode ipmitool nfs-common openssh-server ubuntu-standard casper discover os-prober network-manager resolvconf net-tools locales grub-common grub-pc grub-pc-bin grub2-common vim nano less curl apt-transport-https
 apt install -y --no-install-recommends linux-generic
-dpkg-reconfigure locales
-select whatever you want
-dpkg-reconfigure resolvconf
 ```
 
 Populate networkmanager
@@ -212,7 +202,6 @@ crontab -e
 @reboot /usr/sbin/dmidecode -s system-serial-number >> /mnt/runconfirm/servers.txt
 ```
 
-`mkdir /mnt/runconfirm`
 
 Edit fstab to accomodate NFS boot
 
@@ -277,6 +266,8 @@ exit
 sudo umount /tftpboot/ubuntu/dev
 sudo umount /tftpboot/ubuntu/run
 ```
+##Copy out kernel and initrd
 
-
-
+```
+cp /tftpboot/ubuntu/boot/{vmlinuz,initrd.img} /tftpboot/image/casper
+```

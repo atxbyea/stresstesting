@@ -31,14 +31,16 @@ network:
 
 ```bash
 mkdir /tftpboot
-mkdir /tftpboot/images
+mkdir /tftpboot/image
 mkdir /tftpboot/ubuntu
 mkdir /tftpboot/runconfirm
+mkdir /tftpboot/image/casper
+mkdir /tftpboot/pxelinux.cfg
 
 cd /usr/lib/syslinux/modules/efi64
 cp ldlinux.e64 /tftpboot
 cp {libutil.c32,menu.c32} /tftpboot
-mkdir /tftpboot/pxelinux.cfg
+
 
 cd /tmp
 wget https://mirrors.edge.kernel.org/pub/linux/utils/boot/syslinux/Testing/6.04/syslinux-6.04-pre1.tar.gz
@@ -80,11 +82,12 @@ authoritative;
 `systemctl restart isc-dhcp-server`
 
 ##copy out netboot kernel\initrd
-
-wget wget http://releases.ubuntu.com/focal/ubuntu-20.04.4-live-server-amd64.iso
+```
+cd /tmp
+wget http://releases.ubuntu.com/focal/ubuntu-20.04.4-live-server-amd64.iso
 mount ubuntu-20.04.4-live-server-amd64.iso /mnt
 cp /mnt/casper{vmlinuz,initrd} /tftpboot/images/casper
-
+```
 ##configure pxe boot menu
 
 `nano /tftpboot/pxelinux.cfg/default`

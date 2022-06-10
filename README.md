@@ -2,7 +2,7 @@
 
 ##Debian\Ubuntu based install of tftpd \ apache2 \ dhcp-server 
 
-apt install isc-dhcp-server tftpd-hpa syslinux-efi syslinux-common apache2 sshpass
+apt install isc-dhcp-server tftpd-hpa syslinux-efi syslinux-common apache2 sshpass debootstrap
 
 ##configuring the IP address of the pxe adapter
 
@@ -31,6 +31,10 @@ network:
 
 ```bash
 mkdir /tftpboot
+mkdir /tftpboot/images
+mkdir /tftpboot/ubuntu
+mkdir /tftpboot/runconfirm
+
 cd /usr/lib/syslinux/modules/efi64
 cp ldlinux.e64 /tftpboot
 cp {libutil.c32,menu.c32} /tftpboot
@@ -59,7 +63,7 @@ TFTP_ADDRESS="10.1.0.1:69"
 
 ```
 subnet 10.1.0.0 netmask 255.255.240.0 {
-        range 10.1.0.100 10.1.15.200;
+        range 10.1.1.1 10.1.15.200;
         option routers 10.1.0.1;
         default-lease-time 3600;
         max-lease-time 86400;
@@ -75,14 +79,11 @@ authoritative;
 
 `systemctl restart isc-dhcp-server`
 
-##copy stresslinux into the tftpboot store
+##copy out netboot kernel\initrd
 
-```bash
-mkdir /tftpboot/image
-cd /tftpboot/image
-wget http://download.obs.j0ke.net/stresslinux:/42.3/images/stresslinux.x86_64-1.0.3-Build20.62.tgz
-tar -zxvf stresslinux.x86_64-1.0.3-Build20.62.tgz
-```
+wget wget http://releases.ubuntu.com/focal/ubuntu-20.04.4-live-server-amd64.iso
+mount ubuntu-20.04.4-live-server-amd64.iso /mnt
+cp /mnt/casper{vmlinuz,initrd} /tftpboot/images/casper
 
 ##configure pxe boot menu
 
@@ -93,11 +94,11 @@ UI menu.c32
 PROMPT 1
 TIMEOUT 1
 LABEL Stresslinux Net Boot
-         MENU LABEL Stresslinux
-         KERNEL http://10.1.0.1/image/initrd-netboot-suse-leap-42.1.x86_64-2.42.1.kernel.4.4.180-102-default
-         APPEND initrd=http://10.1.0.1/image/initrd-netboot-suse-leap-42.1.x86_64-2.42.1.gz ramdisk_size=1959936
+         MENU LABEL EirikZ Stress Your DC
+         KERNEL http://10.1.0.1/image/casper/vmlinuz
+         APPEND root=/dev/nfs initrd=http://10.1.0.1/image/casper/initrd nfsroot=10.1.0.1:/tftpboot/ubuntu ip=dhcp ro boot=nfs nfsboot=nfs   
          TEXT HELP
-                 Stresslinux PXE boot
+                 It's getting hot in here
          ENDTEXT
 ```
 
@@ -119,60 +120,160 @@ LABEL Stresslinux Net Boot
 
 `apache2ctl restart`
 
-##fetch the kiwi pxe files
 
-```bash
-cd /tmp
-mkdir stresslinuxpxe
-cd stresslinuxpxe
-wget http://www.stresslinux.org/testing/stresslinux-pxe-sample-config.tar.bz2
-tar xjf stresslinux-pxe-sample-config.tar.bz2
-mv KIWI /tftpboot
-```
+##configure NFS exports
 
-`nano /tftpboot/KIWI/config.default`
-`IMAGE=/dev/ram1;stresslinux.x86_64;1.0.3;10.1.0.1;4096;compressed`
-
-
-#create local ssh keys and scripts to copy keys to servers
-`ssh-keygen`
-`nano ~/.ssh/config`
-`StrictHostKeyChecking no`
-
-
-
-
-`nano /tftpboot/copykeys`
+`nano /etc/exports`
 
 ```
-for server in `cat server.txt`;  
-do  
-    sshpass -p "stress" ssh-copy-id -i ~/.ssh/id_rsa.pub stress@$server  
-done
+/home           10.1.0.0/20(rw,no_root_squash,async,insecure)
+/opt            10.1.0.0/20(rw,no_root_squash,async,insecure)
+/tftpboot/ubuntu 10.1.0.0/20(rw,no_root_squash,async,insecure)
+/tftpboot/runconfirm 10.1.0.0/20(rw,no_root_squash,async,insecure)
 ```
 
-`nano /tftpboot/createlist`
+Reload NFS exports
+
+`exportfs -rv`
+
+
+
+##creating the nfs diskless root
+
+`debootstrap --arch=amd64 --variant=minbase focal /tftpboot/ubuntu http://archive.ubuntu.com/ubuntu`
+
+Then enter the chroot
 
 ```
-seq 0 15 | while read INNER; do
-  seq 0 255 | while read OUTER; do
-    echo "10.1.${INNER}.${OUTER}" >> /tftpboot/servers.txt
-  done
-done
+mount --bind /dev /tftpboot/ubuntu/dev
+mount --bind /run /tftpboot/ubuntu/run
+chroot /tftpboot/ubuntu
+mount none -t proc /proc
+mount none -t sysfs /sys
+mount none -t devpts /dev/pts
+export HOME=/root
+export LC_ALL=C
 ```
 
-`nano /tftpboot/executestress`
+Populate the sources
+```
+cat <<EOF > /etc/apt/sources.list
+deb http://us.archive.ubuntu.com/ubuntu/ focal main restricted universe multiverse 
+deb-src http://us.archive.ubuntu.com/ubuntu/ focal main restricted universe multiverse
+deb http://us.archive.ubuntu.com/ubuntu/ focal-security main restricted universe multiverse 
+deb-src http://us.archive.ubuntu.com/ubuntu/ focal-security main restricted universe multiverse
+deb http://us.archive.ubuntu.com/ubuntu/ focal-updates main restricted universe multiverse 
+deb-src http://us.archive.ubuntu.com/ubuntu/ focal-updates main restricted universe multiverse    
+EOF
+```
+
+Install software and do some local changes
 
 ```
-for server in `cat server.txt`;
-do
-ssh stress@$server "stress -c 32 -i 8 -m 16"
-done
+apt-get update
+apt install -y libterm-readline-gnu-perl systemd-sysv 
+dbus-uuidgen > /etc/machine-id
+ln -fs /etc/machine-id /var/lib/dbus/machine-id
+dpkg-divert --local --rename --add /sbin/initctl
+ln -s /bin/true /sbin/initctl
+apt install -y stress cron dmidecode ipmitool nfs-common openssh-server ubuntu-standard casper lupin-casper discover os-prober network-manager resolvconf net-tools locales grub-common grub-pc grub-pc-bin grub2-common vim nano less curl apt-transport-https
+apt install -y --no-install-recommends linux-generic
+dpkg-reconfigure locales
+select whatever you want
+dpkg-reconfigure resolvconf
+```
+
+Populate networkmanager
+
+```
+cat <<EOF > /etc/NetworkManager/NetworkManager.conf
+[main]
+rc-manager=resolvconf
+plugins=ifupdown,keyfile
+dns=dnsmasq
+[ifupdown]
+managed=false
+EOF
+```
+
+Edit crontab to do 
+1. Start stress testing on boot
+2. Turn on UID of chassis (should work for Dell and HPE)
+3. Append system serial number to a NFS share so you know what servers have run
+
+```
+crontab -e
+
+@reboot /usr/bin/stress -c 8 -i 8 -m 8
+@reboot /usr/bin/ipmitool chassis identify force
+@reboot /usr/bin/dmidecode -s system-serial-number >> /mnt/runconfirm/servers.txt
+```
+
+`mkdir /mnt/runconfirm`
+
+Edit fstab to accomodate NFS boot
+
+```
+proc            /proc           proc    defaults        0       0
+/dev/nfs        /               nfs     defaults        1       1
+none            /tmp            tmpfs   defaults        0       0
+none            /var/tmp        tmpfs   defaults        0       0
+10.1.0.1:/home /home          nfs     defaults        0       0
+10.1.0.1:/opt /opt            nfs     defaults        0       0
+10.1.0.1:/tftpboot/runconfirm	/mnt/runconfirm	nfs	defaults	0	0
 ```
 
 
-##create list, copy keys, execute stress
-`cd /tftpboot`
-`chmod +x {copykeys,createlist,executestress}`
-`./createlist`
-`./copykeys`
+Reconfigure and enable ssh
+
+```
+dpkg-reconfigure network-manager
+
+chmod a+r /boot/vmlinuz*
+systemctl enable ssh
+```
+
+Edit kernel posix
+
+`nano /etc/kernel/postinst.d/chmod-vmlinuz`
+```
+#!/bin/sh -e
+
+chmod 0644 /boot/vmlinuz-*
+```
+`chmod a+x /etc/kernel/postinst.d/chmod-vmlinuz`
+
+Edit initramfs.conf to load netboot modules
+
+`nano /etc/initramfs-tools/initramfs.conf`
+`MODULES=netboot`
+
+Recreate initramfs
+
+`update-initramfs -u`
+
+Change root password
+
+`passwd`
+
+Cleanup and leaving chroot
+
+```
+truncate -s 0 /etc/machine-id
+rm /sbin/initctl
+dpkg-divert --rename --remove /sbin/initctl
+
+apt-get clean
+rm -rf /tmp/* ~/.bash_history
+umount /proc
+umount /sys
+umount /dev/pts
+export HISTSIZE=0
+exit
+
+sudo umount /tftpboot/ubuntu/dev
+sudo umount /tftpboot/ubuntu/run
+```
+
+
+

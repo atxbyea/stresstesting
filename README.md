@@ -198,7 +198,7 @@ Edit crontab to do
 ```
 crontab -e
 
-@reboot /usr/bin/stress -c 8 -i 8 -m 8
+@reboot /usr/bin/stress-ng --vm 1 --vm-bytes 75% --vm-method all --cpu 0
 @reboot /usr/bin/ipmitool chassis identify force
 @reboot /usr/sbin/dmidecode -s system-serial-number >> /mnt/runconfirm/servers.txt
 ```

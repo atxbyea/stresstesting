@@ -173,7 +173,7 @@ dbus-uuidgen > /etc/machine-id
 ln -fs /etc/machine-id /var/lib/dbus/machine-id
 dpkg-divert --local --rename --add /sbin/initctl
 ln -s /bin/true /sbin/initctl
-apt install -y stress cron dmidecode ipmitool nfs-common openssh-server ubuntu-standard casper discover os-prober network-manager resolvconf net-tools locales grub-common grub-pc grub-pc-bin grub2-common vim nano less curl apt-transport-https
+apt install -y stress-ng cron dmidecode ipmitool nfs-common openssh-server ubuntu-standard casper discover os-prober network-manager resolvconf net-tools locales grub-common grub-pc grub-pc-bin grub2-common vim nano less curl apt-transport-https
 apt install -y --no-install-recommends linux-generic
 ```
 
@@ -272,8 +272,8 @@ umount /dev/pts
 export HISTSIZE=0
 exit
 
-sudo umount /tftpboot/ubuntu/dev
-sudo umount /tftpboot/ubuntu/run
+umount /tftpboot/ubuntu/dev
+umount /tftpboot/ubuntu/run
 ```
 ##Copy out kernel and initrd
 
